@@ -4,23 +4,21 @@ Speed up Manifest::Compile by forking processes
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-    gem 'sprockets-derailleur'
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install sprockets-derailleur
-
-Require `sprockets-derailleur` in environment file:
-    
-    require 'sprockets-derailleur'
+1. Add this line to your application's Gemfile: `gem 'sprockets-derailleur'`
+2. And then execute: `$ bundle`, or install it yourself as: `$ gem install sprockets-derailleur`
+3. Require `sprockets-derailleur` in environment file: `require 'sprockets-derailleur'`
 
 ## Usage
+
+To override the number of processes you can use the
+`SPROCKETS_DERAILLEUR_WORKER_COUNT` environment variable. It defaults to the
+number of processors on your machine.
+
+### Rails 4.0
+
+Just drop in the Gemfile, nothing more.
+
+### Rails 3.2
 
 To install to an existing rails 3.2 project, first create a new file, 'sprockets_derailleur.rb' in config/initializers.
 
@@ -32,15 +30,11 @@ module Sprockets
   
     alias_method :compile_without_manifest, :compile
     def compile
-    
-      # Determine how many workers you want to use first. Determine the number of physical CPUs this way
-      processes = SprocketsDerailleur::number_of_processors rescue 1
-      
-      puts "Multithreading on " + processes.to_s + " processors"
+      puts "Multithreading on " + SprocketsDerailleur.worker_count.to_s + " processors"
       puts "Starting Asset Compile: " + Time.now.getutc.to_s
       
       # Then initialize the manifest with the workers you just determined
-      manifest = Sprockets::Manifest.new(env, target, processes)
+      manifest = Sprockets::Manifest.new(env, target)
       manifest.compile paths
       
       puts "Finished Asset Compile: " + Time.now.getutc.to_s
@@ -94,6 +88,28 @@ rake assets:precompile:primary RAILS_ENV=production
 ```
 
 This skips the non-digest compile, hence doubling speed (especially useful if syncing assets with a remote server).
+
+## Troubleshooting
+
+In some situations (like if you are using compass sprites) you may see
+occasional exceptions such as:
+
+```
+lib/active_support/core_ext/marshal.rb:6:in `load': end of file reached (EOFError)
+
+AND/OR
+
+lib/sprockets-derailleur/manifest.rb:127:in `write': Broken pipe (Errno::EPIPE)
+```
+
+The default cache is not safe for parallel, you can override it by adding the
+following to `config/application.rb`:
+
+```ruby
+config.assets.configure do |env|
+  env.cache = SprocketsDerailleur::FileStore.new("tmp/cache/assets")
+end
+```
 
 ## Contributing
 
