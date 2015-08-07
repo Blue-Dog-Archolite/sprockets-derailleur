@@ -1,20 +1,10 @@
 require "sprockets"
 require 'logging'
 
-module SpeedUp
-  def self.logger
-    @logger ||= Logging.logger(STDOUT)
-  end
-end
-
 module Sprockets
   class Manifest
-    def logger
-      SpeedUp.logger
-    end
-
     attr_reader :workers
-    
+
     alias_method :old_initialize, :initialize
     def initialize(environment, path, workers=1)
       @workers = workers
@@ -35,14 +25,14 @@ module Sprockets
         paths = paths.select do |path|
 
           if File.extname(path) == ""
-            logger.info "Skipping #{path} since it has no extension"
+            SpeedUp.logger.info "Skipping #{path} since it has no extension"
             false
           else
             true
           end
         end
 
-        logger.warn "Initializing #{worker_count} workers"
+        SpeedUp.logger.warn "Initializing #{worker_count} workers"
 
         workers = []
         worker_count.times do
@@ -77,7 +67,7 @@ module Sprockets
           end
         end
 
-        logger.debug "Cleaning up workers"
+        SpeedUp.logger.debug "Cleaning up workers"
 
         workers.each do |worker|
           worker[:read].close
@@ -91,13 +81,13 @@ module Sprockets
         save
       end
 
-      logger.info "Completed compiling assets (#{(time.real * 100).round / 100.0}s)"
+      SpeedUp.logger.info "Completed compiling assets (#{(time.real * 100).round / 100.0}s)"
 
       unless paths_with_errors.empty?
-        logger.error "Asset paths with errors:"
+        SpeedUp.logger.error "Asset paths with errors:"
 
         paths_with_errors.each do |path, message|
-          logger.error "\t#{path}: #{message}"
+          SpeedUp.logger.error "\t#{path}: #{message}"
         end
       end
     end
@@ -130,9 +120,9 @@ module Sprockets
                 target = File.join(dir, asset.digest_path)
 
                 if File.exist?(target)
-                  logger.debug "Skipping #{target}, already exists"
+                  SpeedUp.logger.debug "Skipping #{target}, already exists"
                 else
-                  logger.debug "Writing #{target}"
+                  SpeedUp.logger.debug "Writing #{target}"
                   asset.write_to target
                   asset.write_to "#{target}.gz" if asset.is_a?(BundledAsset)
                 end
@@ -144,7 +134,7 @@ module Sprockets
               end
             end
 
-            logger.info "Compiled #{path} (#{(time.real * 1000).round}ms, pid #{Process.pid})"
+            SpeedUp.logger.info "Compiled #{path} (#{(time.real * 1000).round}ms, pid #{Process.pid})"
           end
         ensure
           child_read.close

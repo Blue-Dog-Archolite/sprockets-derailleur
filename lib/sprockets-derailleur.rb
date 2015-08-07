@@ -1,21 +1,7 @@
 require "sprockets-derailleur/version"
 require "sprockets-derailleur/manifest"
 require "sprockets-derailleur/file_store"
-
-require 'logging'
-
-module SpeedUp
-  def self.logger
-    @logger ||= SpeedUp.get_logger
-  end
-
-  def self.get_logger
-    logger = Logging.logger(STDOUT)
-    logger_level = ENV["LOGGER_LEVEL"] ? ENV["LOGGER_LEVEL"].to_sym : :error
-    logger.level = logger_level
-    logger
-  end
-end
+require "sprockets-derailleur/logger"
 
 module SprocketsDerailleur
   def self.number_of_processors
@@ -27,7 +13,7 @@ module SprocketsDerailleur
       # this works for windows 2000 or greater
       require 'win32ole'
       wmi = WIN32OLE.connect("winmgmts://")
-      wmi.ExecQuery("select * from Win32_ComputerSystem").each do |system| 
+      wmi.ExecQuery("select * from Win32_ComputerSystem").each do |system|
         begin
           processors = system.NumberOfLogicalProcessors
         rescue
